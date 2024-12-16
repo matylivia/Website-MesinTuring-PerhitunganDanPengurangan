@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesin Turing untuk Penjumlahan dan Pengurangan</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            position: relative;
+            flex-direction: column;
+            border: 5px solid #ff69b4; 
+        }
+        .container {
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+            padding: 20px; 
+        }
+        h1 {
+            color: #ff69b4; 
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #ff69b4; 
+            margin-bottom: 30px;
+        }
+        .tape {
+            display: flex;
+            justify-content: center;
+            margin: 20px auto;
+            padding: 10px;
+            border: 2px solid #666;
+            background: #fff;
+            overflow-x: auto;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #ccc;
+            margin: 0 2px;
+            font-size: 18px;
+        }
+        .active {
+            background: #ffd700; 
+            border: 2px solid #ff8c00;
+        }
+        .highlight {
+            background: #ff69b4; 
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            background: #ff69b4; 
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #ff1493; 
+        }
+        input {
+            margin: 5px;
+            padding: 5px;
+            font-size: 16px;
+        }
+        .result {
+            background: #ff69b4; 
+            color: white;
+            padding: 10px;
+            margin-top: 20px;
+            font-size: 20px;
+        }
+
+        .tulip-left {
+            position: absolute;
+            bottom: 10px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: pink;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 105, 180, 0.8);
+        }
+
+        .tulip-left:before {
+            content: '';
+            position: absolute;
+            top: -25px;
+            left: 10px;
+            width: 30px;
+            height: 30px;
+            background: pink;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 105, 180, 0.8);
+        }
+
+        .tulip-left:after {
+            content: '';
+            position: absolute;
+            top: -45px;
+            left: 18px;
+            width: 15px;
+            height: 15px;
+            background: pink;
+            border-radius: 50%;
+        }
+
+        .tulip-right {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: pink;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 105, 180, 0.8);
+        }
+
+        .tulip-right:before {
+            content: '';
+            position: absolute;
+            top: -25px;
+            left: 10px;
+            width: 30px;
+            height: 30px;
+            background: pink;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 105, 180, 0.8);
+        }
+
+        .tulip-right:after {
+            content: '';
+            position: absolute;
+            top: -45px;
+            left: 18px;
+            width: 15px;
+            height: 15px;
+            background: pink;
+            border-radius: 50%;
+        }
+
+        .pink-line {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 4px;
+            background-color: #ff69b4;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mesin Turing</h1>
+        <h2>Penjumlahan dan Pengurangan</h2>
+        <div>
+            <input type="text" id="inputTape" placeholder="Masukkan angka (misalnya, 3+2 atau 5-2)">
+            <button onclick="initializeTape()">Jalankan</button>
+        </div>
+        <div class="tape highlight" id="tapeContainer"></div>
+        <p id="result" class="result"></p>
+    </div>
+
+    <!-- hiasan kiri dan kanan -->
+    <div class="tulip-left"></div>
+    <div class="tulip-right"></div>
+
+    <!-- garis -->
+    <div class="pink-line"></div>
+
+    <script>
+        let tape = [];
+        let currentIndex = 0;
+
+        function initializeTape() {
+            const input = document.getElementById("inputTape").value.trim();
+            if (!/^\d+[\+\-]\d+$/.test(input)) {
+                alert("Masukkan operasi yang valid, misalnya 3+2 atau 5-2.");
+                return;
+            }
+
+            const operation = input.includes("+") ? "addition" : "subtraction";
+            const [num1, num2] = input.split(operation === "addition" ? "+" : "-").map(Number);
+
+            if (operation === "subtraction" && num2 > num1) {
+                alert("Pengurangan tidak valid jika pengurangnya lebih besar.");
+                return;
+            }
+
+            //inisialisasi tape
+            tape = ["_", ...Array(num1).fill("1"), operation === "addition" ? "+" : "-", ...Array(num2).fill("1"), "="];
+            currentIndex = 1; 
+            renderTape();
+
+            if (operation === "addition") {
+                runAddition(num1, num2);
+            } else {
+                runSubtraction(num1, num2);
+            }
+        }
+
+        function renderTape() {
+            const tapeContainer = document.getElementById("tapeContainer");
+            tapeContainer.innerHTML = "";
+
+            tape.forEach((symbol, index) => {
+                const cell = document.createElement("div");
+                cell.className = "cell";
+                if (index === currentIndex) cell.classList.add("active");  
+                if (symbol === "_") cell.classList.add("highlight"); 
+                cell.textContent = symbol;
+                tapeContainer.appendChild(cell);
+            });
+        }
+
+        async function runAddition(num1, num2) {
+            let count = num1 + num2;
+
+            //penjumlahan
+            while (count > 0) {
+                if (tape[currentIndex] === "1") {
+                    currentIndex++;
+                    count--;
+                } else {
+                    currentIndex++;
+                }
+                renderTape();
+                await sleep(500);
+            }
+
+            //hasil
+            document.getElementById("result").textContent = `Hasil: ${num1 + num2}`;
+        }
+
+        async function runSubtraction(num1, num2) {
+            let count = num2;
+
+            //pengurangan
+            while (count > 0) {
+                if (tape[currentIndex] === "1") {
+                    tape[currentIndex] = "_";  
+                    count--;
+                }
+                currentIndex++;
+                renderTape();
+                await sleep(500);
+            }
+
+            //memindahkan currentIndex hingga mencapai simbol '='
+            while (tape[currentIndex] !== "=") {
+                currentIndex++;
+                renderTape();
+                await sleep(500);
+            }
+
+            //hasil
+            document.getElementById("result").textContent = `Hasil: ${num1 - num2}`;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
